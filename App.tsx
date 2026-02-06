@@ -15,8 +15,8 @@ const SidebarItem: React.FC<{
   <button
     onClick={onClick}
     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${active
-        ? 'bg-white text-blue-600 shadow-sm font-semibold'
-        : 'text-white/80 hover:bg-white/10 hover:text-white'
+      ? 'bg-white text-blue-600 shadow-sm font-semibold'
+      : 'text-white/80 hover:bg-white/10 hover:text-white'
       }`}
   >
     <i className={`fa-solid ${icon} w-6 text-center`}></i>
@@ -47,8 +47,8 @@ const ModelCard: React.FC<{
   <button
     onClick={onSelect}
     className={`p-4 rounded-xl border-2 transition-all ${isSelected
-        ? 'border-blue-500 bg-blue-50 text-blue-700'
-        : 'border-slate-200 bg-white hover:border-blue-300'
+      ? 'border-blue-500 bg-blue-50 text-blue-700'
+      : 'border-slate-200 bg-white hover:border-blue-300'
       }`}
   >
     <div className="flex items-center space-x-3">
@@ -275,6 +275,65 @@ const App: React.FC = () => {
     }
   };
 
+  // Add single student
+  const handleAddStudent = () => {
+    const name = prompt('Nhập họ tên học sinh:', '');
+    if (name && name.trim()) {
+      const newStudent: Student = {
+        id: `st-${Date.now()}`,
+        name: name.trim(),
+        studentId: `HS${String(data.students.length + 1).padStart(3, '0')}`,
+        avatar: `https://picsum.photos/seed/${Date.now()}/200`,
+        grades: [],
+        violations: []
+      };
+
+      setData(prev => ({
+        ...prev,
+        students: [...prev.students, newStudent]
+      }));
+    }
+  };
+
+  // Import students from Excel
+  const handleExcelImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+
+      // Skip header row if exists
+      const startIndex = lines[0]?.toLowerCase().includes('họ tên') || lines[0]?.toLowerCase().includes('name') ? 1 : 0;
+
+      const newStudents: Student[] = lines.slice(startIndex).map((line, idx) => {
+        const name = line.split(',')[0]?.trim() || line.trim();
+        return {
+          id: `st-${Date.now()}-${idx}`,
+          name: name,
+          studentId: `HS${String(data.students.length + idx + 1).padStart(3, '0')}`,
+          avatar: `https://picsum.photos/seed/${Date.now() + idx}/200`,
+          grades: [],
+          violations: []
+        };
+      }).filter(s => s.name);
+
+      if (newStudents.length > 0) {
+        setData(prev => ({
+          ...prev,
+          students: [...prev.students, ...newStudents]
+        }));
+        alert(`Đã thêm ${newStudents.length} học sinh thành công!`);
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input
+    event.target.value = '';
+  };
+
   const handleAIAnalyze = async (student: Student) => {
     if (!apiKey) {
       setShowApiModal(true);
@@ -479,55 +538,80 @@ const App: React.FC = () => {
 
         {/* Students View */}
         {view === 'students' && !selectedStudent && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredStudents.map(student => {
-              const avg = student.grades.length ? (student.grades.reduce((a, b) => a + b.score, 0) / student.grades.length).toFixed(1) : 'N/A';
-              return (
-                <div key={student.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group">
-                  <div className="h-24 gradient-bg relative">
-                    <img
-                      src={student.avatar}
-                      className="w-16 h-16 rounded-2xl border-4 border-white absolute -bottom-8 left-6 shadow-md"
-                      alt={student.name}
-                    />
-                  </div>
-                  <div className="p-6 pt-10">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">{student.name}</h4>
-                        <p className="text-xs text-slate-500">ID: {student.studentId}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="inline-block px-2 py-1 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold">
-                          TB: {avg}
-                        </span>
-                      </div>
-                    </div>
+          <div className="space-y-6">
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                onClick={handleAddStudent}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-200 hover:shadow-xl transition-all"
+              >
+                <i className="fa-solid fa-user-plus"></i>
+                <span>Thêm học sinh</span>
+              </button>
 
-                    <div className="mt-6 flex gap-2">
-                      <button
-                        onClick={() => setSelectedStudent(student)}
-                        className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
-                      >
-                        Chi tiết
-                      </button>
-                      <button
-                        onClick={() => handleAddGrade(student.id)}
-                        className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors"
-                      >
-                        + Điểm
-                      </button>
-                      <button
-                        onClick={() => handleAddViolation(student.id)}
-                        className="flex-1 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-colors"
-                      >
-                        + Vi phạm
-                      </button>
+              <label className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold shadow-lg shadow-emerald-200 hover:shadow-xl transition-all cursor-pointer">
+                <i className="fa-solid fa-file-excel"></i>
+                <span>Thêm HS từ Excel</span>
+                <input
+                  type="file"
+                  accept=".csv,.txt,.xlsx,.xls"
+                  onChange={handleExcelImport}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Student Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredStudents.map(student => {
+                const avg = student.grades.length ? (student.grades.reduce((a, b) => a + b.score, 0) / student.grades.length).toFixed(1) : 'N/A';
+                return (
+                  <div key={student.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow group">
+                    <div className="h-24 gradient-bg relative">
+                      <img
+                        src={student.avatar}
+                        className="w-16 h-16 rounded-2xl border-4 border-white absolute -bottom-8 left-6 shadow-md"
+                        alt={student.name}
+                      />
+                    </div>
+                    <div className="p-6 pt-10">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="text-lg font-bold text-slate-800">{student.name}</h4>
+                          <p className="text-xs text-slate-500">ID: {student.studentId}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block px-2 py-1 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold">
+                            TB: {avg}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex gap-2">
+                        <button
+                          onClick={() => setSelectedStudent(student)}
+                          className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
+                        >
+                          Chi tiết
+                        </button>
+                        <button
+                          onClick={() => handleAddGrade(student.id)}
+                          className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors"
+                        >
+                          + Điểm
+                        </button>
+                        <button
+                          onClick={() => handleAddViolation(student.id)}
+                          className="flex-1 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition-colors"
+                        >
+                          + Vi phạm
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 
