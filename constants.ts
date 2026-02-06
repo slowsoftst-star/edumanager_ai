@@ -4,7 +4,7 @@ import { ClassData } from './types';
 export const DEMO_DATA: ClassData = {
   id: 'class-10a1',
   className: 'Lớp 12A1',
-  teacherName: 'Nguyễn Văn A',
+  teacherName: 'Trần Minh Thuận',
   students: [
     {
       id: 'st-1',
