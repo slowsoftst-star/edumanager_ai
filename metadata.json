@@ -1,0 +1,5 @@
+{
+  "name": "EduManager AI - Quản lý Học tập Thông minh",
+  "description": "Ứng dụng quản lý lớp học toàn diện hỗ trợ giáo viên theo dõi điểm số, chuyên cần và vi phạm nội quy, tích hợp Gemini AI để phân tích hành vi và kết quả học tập của học sinh.",
+  "requestFramePermissions": []
+}
